@@ -1,0 +1,185 @@
+{
+    "last_updated": "2026-05-22",
+    "negative_constraints": [
+        {
+            "id": "NC_AUTO_1779351653273",
+            "target_slots": [
+                "VISUALIZATION",
+                "HOST_COMPILATION",
+                "INITIALIZATION"
+            ],
+            "error_signature": "`FatalError: an OpenGL platform library has not been loaded into this process`",
+            "rule": "The environment variable `MUJOCO_GL` must be set to `egl` *before* `import mujoco` is called, especially in headless environments like Google Colab, to enable EGL-based rendering. Placing `os.environ[\"MUJOCO_GL\"] = \"egl\"` after `import mujoco` will not take effect.\n\n\u26a0\ufe0f Warning: The provided `[VISUALIZATION]` atomic block contains a violation of `RULE 4 \u2014 DEVICE-TO-HOST DATA RETRIEVAL`. The lines `cpu_data.qpos[:] = data.qpos.numpy()[world_idx * nq:(world_idx + 1) * nq]` and `cpu_data.qvel[:] = data.qvel.numpy()[world_idx * nv:(world_idx + 1) * nv]` perform manual stride-slicing of 2D NumPy arrays. This is explicitly prohibited by RULE 4. The correct method is to use `mjw.get_data_into(cpu_data, mj_model, data, index=world_idx)`. I have corrected this in the generated code.",
+            "added": "2026-05-21"
+        },
+        {
+            "id": "NC_AUTO_1779352169889",
+            "target_slots": [
+                "HOST_COMPILATION",
+                "INITIALIZATION",
+                "EXECUTION_LOOP"
+            ],
+            "error_signature": "ValueError: could not broadcast input array from shape (3,) into shape (3,7)",
+            "rule": "This error occurs when attempting to assign a 1D NumPy array (e.g., `shape (3,)`) to a 2D slice of a NumPy array (e.g., `shape (3,7)`). In `mujoco_warp`, `data.qpos` is a 2D CUDA-device array shaped `(nworld, nq)`. When converting it to a host NumPy array via `data.qpos.numpy()`, it retains this 2D structure. The error typically arises from incorrect slicing, such as `qpos_host[0:3, :]` (which yields a 2D array of shape `(3, nq)`) when the intent was to modify a 1D slice for a single world, like `qpos_host[world_idx, 0:3]`. To prevent this, always remember `data.qpos` is 2D. For parallel, device-side state mutation, use Warp kernels, which correctly handle the `(nworld, nq)` dimension matrix by iterating over `wp.tid()` for the `world_idx`.\n\n---",
+            "added": "2026-05-21"
+        },
+        {
+            "id": "NC_AUTO_1779357220805",
+            "target_slots": [
+                "HOST_COMPILATION",
+                "INITIALIZATION",
+                "VRAM_ESTIMATE",
+                "STATE_MUTATION"
+            ],
+            "error_signature": "`ValueError: Incorrect 1D-style slicing on 2D mujoco_warp array`",
+            "rule": "`data.qpos` and `data.qvel` are 2D arrays shaped `(nworld, nq)` and `(nworld, nv)` respectively. When accessing or modifying data for a single world, use 2D indexing like `data.qpos.numpy()[world_idx, :]` or `data.qvel.numpy()[world_idx, :]`. Do NOT use 1D-style slicing such as `data.qpos.numpy()[world_idx * nq : (world_idx + 1) * nq]` as this will incorrectly slice along the first dimension, potentially returning multiple worlds or causing shape mismatches.",
+            "added": "2026-05-21",
+            "supersedes": "`RULE_1`"
+        },
+        {
+            "id": "NC_AUTO_1779449809792",
+            "target_slots": [
+                "STATE_MUTATION"
+            ],
+            "error_signature": "ModuleNotFoundError: No module named 'mujoco'",
+            "rule": "The MuJoCo Warp environment in Google Colab requires explicit installation of the MuJoCo and Warp packages via pip before script execution. The environment does not include these dependencies by default. Always prepend `!pip install mujoco mujoco-warp` to the script.",
+            "added": "2026-05-22"
+        },
+        {
+            "id": "NC_AUTO_1779450276543",
+            "target_slots": [
+                "VISUALIZATION",
+                "HOST_COMPILATION",
+                "INITIALIZATION"
+            ],
+            "error_signature": "ModuleNotFoundError: No module named 'mediapy'",
+            "rule": "The `mediapy` library is not pre-installed in the standard Google Colab runtime environment. To use the visualization atomic block, you must explicitly install it using `!pip install mediapy` at the very beginning of the script before importing it.",
+            "added": "2026-05-22"
+        },
+        {
+            "id": "NC_AUTO_1779450421136",
+            "target_slots": [
+                "STATE_MUTATION"
+            ],
+            "error_signature": "ValueError: could not broadcast input array from shape (N, M) into shape (M,)",
+            "rule": "mujoco_warp data arrays (qpos, qvel, etc.) are natively 2D tensors of shape (nworld, n_dim). When accessing state for a specific world, you must use 2D indexing: `data.qpos.numpy()[world_idx, :]`. Do not attempt to flatten the array or use linear stride math (e.g., `world_idx * nq`) on the result of `.numpy()`, as this treats the 2D matrix as a 1D buffer and causes shape broadcasting errors.",
+            "added": "2026-05-22",
+            "supersedes": "RULE_1 (Clarifies the implementation of the 2D matrix framework)."
+        },
+        {
+            "id": "NC_AUTO_1779450887621",
+            "target_slots": [
+                "HOST_COMPILATION",
+                "INITIALIZATION",
+                "VRAM_ESTIMATE",
+                "STATE_MUTATION"
+            ],
+            "error_signature": "TypeError: unsupported format string passed to numpy.ndarray.__format__",
+            "rule": "When printing or formatting values extracted from a Warp/Numpy array slice (e.g., `data.qpos.numpy()[idx]`), always explicitly cast the result to a native Python type (e.g., `float(val)` or `int(val)`) before using f-string formatting. Numpy scalars do not implement the `__format__` protocol required by Python f-strings.",
+            "added": "2026-05-22"
+        },
+        {
+            "id": "NC_AUTO_1779452184415",
+            "target_slots": [
+                "VISUALIZATION",
+                "HOST_COMPILATION",
+                "INITIALIZATION"
+            ],
+            "error_signature": "ModuleNotFoundError: No module named 'pyvirtualdisplay'",
+            "rule": "In Google Colab environments, the `pyvirtualdisplay` package is not pre-installed. When performing headless rendering with `mujoco.Renderer`, prefer setting `os.environ[\"MUJOCO_GL\"] = \"egl\"` and using `mediapy` for display, which is natively supported in Colab. Do not attempt to import `pyvirtualdisplay` unless explicitly required for specific legacy OpenGL backends.",
+            "added": "2026-05-22"
+        },
+        {
+            "id": "NC_AUTO_1779452357381",
+            "target_slots": [
+                "STATE_MUTATION"
+            ],
+            "error_signature": "ValueError: could not broadcast input array from shape (N, M) into shape (M,)",
+            "rule": "When accessing mujoco_warp state arrays (qpos, qvel), always use 2D indexing `array.numpy()[world_idx, :]` instead of flat-slicing `array.numpy()[start:end]`. The underlying buffer is a 2D matrix of shape (nworld, nq/nv); flat-slicing on the numpy view of a 2D array returns a sub-matrix rather than a row vector, causing broadcast mismatches.",
+            "added": "2026-05-22",
+            "supersedes": "RULE_1 (Clarifies the implementation of the 2D indexing requirement)"
+        },
+        {
+            "id": "NC_AUTO_1779452620703",
+            "target_slots": [
+                "STATE_MUTATION"
+            ],
+            "error_signature": "ValueError: could not broadcast input array from shape (N, M) into shape (M,)",
+            "rule": "When accessing `data.qpos` or `data.qvel` via `.numpy()`, you are interacting with a 2D array of shape `(nworld, nq)`. You must use 2D indexing `[world_idx, :]` to retrieve the state for a specific world. Slicing the first dimension with `world_idx * nq` treats the 2D array as a 1D flat buffer, which causes a shape mismatch when the slice length is interpreted as the number of worlds.",
+            "added": "2026-05-22",
+            "supersedes": "RULE_1 (Clarifies the implementation of the 2D matrix framework)."
+        },
+        {
+            "id": "NC_AUTO_1779452854945",
+            "target_slots": [
+                "VISUALIZATION",
+                "HOST_COMPILATION",
+                "INITIALIZATION"
+            ],
+            "error_signature": "ModuleNotFoundError: No module named 'pyvirtualdisplay'",
+            "rule": "In Google Colab environments, the `pyvirtualdisplay` library is not pre-installed. When using `mujoco.Renderer` with `os.environ[\"MUJOCO_GL\"] = \"egl\"`, you must explicitly install the dependency via `!pip install pyvirtualdisplay` before importing it. Alternatively, if using the standard `mediapy` rendering path, ensure `mediapy` is installed via `!pip install mediapy`.",
+            "added": "2026-05-22"
+        },
+        {
+            "id": "NC_AUTO_1779453001716",
+            "target_slots": [
+                "HOST_COMPILATION",
+                "INITIALIZATION",
+                "EXECUTION_LOOP"
+            ],
+            "error_signature": "TypeError: get_data_into() got an unexpected keyword argument 'index'",
+            "rule": "The `mjw.get_data_into` function expects the world index as a positional argument, not a keyword argument. Always use `mjw.get_data_into(cpu_data, mj_model, data, world_idx)` to avoid signature mismatch.",
+            "added": "2026-05-22",
+            "supersedes": "RULE_4"
+        },
+        {
+            "id": "NC_AUTO_1779453184907",
+            "target_slots": [
+                "HOST_COMPILATION",
+                "INITIALIZATION",
+                "VRAM_ESTIMATE",
+                "STATE_MUTATION",
+                "VISUALIZATION"
+            ],
+            "error_signature": "TypeError: get_data_into() got an unexpected keyword argument 'index'",
+            "rule": "The `mjw.get_data_into` function signature is `mjw.get_data_into(cpu_data, mj_model, data, world_idx)`. Do not use keyword arguments for the world index; pass it as the fourth positional argument.",
+            "added": "2026-05-22",
+            "supersedes": "RULE_4"
+        },
+        {
+            "id": "NC_AUTO_1779459699539",
+            "target_slots": [
+                "STATE_MUTATION"
+            ],
+            "error_signature": "ModuleNotFoundError: No module named 'mujoco'",
+            "rule": "In the Google Colab environment, the `mujoco` and `mujoco_warp` packages are not pre-installed in the standard runtime. You must execute `!pip install mujoco mujoco-warp` at the very beginning of the notebook cell before any imports. This is a mandatory environment setup step for all MuJoCo Warp projects on Colab.",
+            "added": "2026-05-22"
+        },
+        {
+            "id": "NC_AUTO_1779460225342",
+            "target_slots": [
+                "HOST_COMPILATION",
+                "INITIALIZATION",
+                "VRAM_ESTIMATE",
+                "STATE_MUTATION",
+                "VISUALIZATION"
+            ],
+            "error_signature": "TypeError: get_data_into() got an unexpected keyword argument 'index'",
+            "rule": "The `mujoco_warp.get_data_into` function does not accept an `index` keyword argument. Instead, it performs a bulk copy of the entire multi-world state buffer. To extract a specific world's state, you must perform a slice operation on the resulting CPU-side `MjData` or use direct numpy indexing on the `data.qpos` and `data.qvel` arrays before copying them into the CPU `MjData` object.",
+            "added": "2026-05-22",
+            "supersedes": "RULE_4"
+        },
+        {
+            "id": "NC_AUTO_1779461340059",
+            "target_slots": [
+                "HOST_COMPILATION",
+                "INITIALIZATION",
+                "EXECUTION_LOOP"
+            ],
+            "error_signature": "ValueError: XML Error: Error opening file",
+            "rule": "When using `mujoco.MjModel.from_xml_string`, all `<include>` tags must point to files present in the local filesystem. To ensure portability in Google Colab, always inline the full XML structure or use `mujoco.MjModel.from_xml_path` only if the file has been explicitly uploaded to the Colab instance.",
+            "added": "2026-05-22"
+        }
+    ],
+    "atomic_blocks": {}
+}
