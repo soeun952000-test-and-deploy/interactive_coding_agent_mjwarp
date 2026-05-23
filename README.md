@@ -1,4 +1,5 @@
 # ◈ MuJoCo Warp Co-Pilot
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/soeun952000-test-and-deploy/interactive_coding_agent_mjwarp/blob/main/mujoco_warp_copilot_v5.ipynb)
 
 A domain-specific AI coding agent for the [google-deepmind/mujoco_warp](https://github.com/google-deepmind/mujoco_warp) physics simulation framework. Built to run entirely on a free Google Colab T4 GPU, it generates production-grade parallel simulation code, diagnoses runtime errors from screenshots, and gets smarter across sessions by persisting learned constraints to a GitHub vault.
 
