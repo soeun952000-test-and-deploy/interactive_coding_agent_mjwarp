@@ -105,7 +105,7 @@ Before running any cells, add these five secrets in the Colab sidebar (🔑 icon
 | `GEMINI_API_KEY` | Your Gemini API key |
 | `GITHUB_TOKEN` | Your GitHub PAT |
 | `GITHUB_USERNAME` | Your GitHub username |
-| `GITHUB_REPO_NAME` | This repo's name |
+| `GITHUB_REPO_NAME` | Your GitHub repo name |
 | `NGROK_AUTHTOKEN` | Your ngrok authtoken |
 
 ### GitHub repo setup
